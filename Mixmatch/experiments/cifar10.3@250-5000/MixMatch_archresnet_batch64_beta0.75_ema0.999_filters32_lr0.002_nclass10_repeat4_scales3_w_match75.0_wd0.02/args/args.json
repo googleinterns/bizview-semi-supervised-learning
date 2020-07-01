@@ -1,0 +1,13 @@
+{
+    "arch": "resnet",
+    "batch": 64,
+    "beta": 0.75,
+    "ema": 0.999,
+    "filters": 32,
+    "lr": 0.002,
+    "nclass": 10,
+    "repeat": 4,
+    "scales": 3,
+    "w_match": 75.0,
+    "wd": 0.02
+}
