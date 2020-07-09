@@ -181,6 +181,7 @@ class DataSet:
 augment_stl10 = lambda x: dict(image=augment_shift(augment_mirror(x['image']), 12), label=x['label'])
 augment_cifar10 = lambda x: dict(image=augment_shift(augment_mirror(x['image']), 4), label=x['label'])
 augment_svhn = lambda x: dict(image=augment_shift(x['image'], 4), label=x['label'])
+augment_OIDv6 = lambda x: dict(image=augment_shift(augment_mirror(x['image']), 4), label=x['label'])
 
 DATASETS = {}
 DATASETS.update([DataSet.creator('cifar10', seed, label, valid, augment_cifar10)
@@ -198,3 +199,6 @@ DATASETS.update([DataSet.creator('svhn', seed, label, valid, augment_svhn, do_me
 DATASETS.update([DataSet.creator('svhn_noextra', seed, label, valid, augment_svhn, do_memoize=False)
                  for seed, label, valid in
                  itertools.product(range(6), [250, 500, 1000, 2000, 4000, 8000], [1, 5000])])
+DATASETS.update([DataSet.creator('OIDv6', seed, label, valid, augment_OIDv6)
+                 for seed, label, valid in
+                 itertools.product(range(6), [1000], [1])])
