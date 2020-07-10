@@ -1,6 +1,10 @@
 import os  # used for directory operations
+import io
 import tensorflow as tf
 from PIL import Image  # used to read images from directory
+
+def _int64_feature(value):
+  return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
 
 def create_TFRecord(cwd, recordPath, sets):
     # the number of classes of images
@@ -21,9 +25,23 @@ def create_TFRecord(cwd, recordPath, sets):
             img_path = os.path.join(class_path, img_name)
             try:
                 img = Image.open(img_path, "r")
-                img_raw = img.tobytes()
+                
+                # Exclude all non RGB images
+                if len(img.getbands()) != 3:
+                    continue
+                img = img.resize((1024, 1024))
+                # img = open(img_path, 'rb').read()
+
+                # width, height = img.size
+                imgByteArr = io.BytesIO()
+                img.save(imgByteArr, format='JPEG')
+                imgByteArr = imgByteArr.getvalue()
+                # img = img.tobytes()
                 example = tf.train.Example(features=tf.train.Features(feature={
-                    "image": tf.train.Feature(bytes_list=tf.train.BytesList(value=[img_raw])),
+                    # 'height': _int64_feature(width),
+                    # 'width': _int64_feature(height),
+                    # 'depth': _int64_feature(depth),
+                    "image": tf.train.Feature(bytes_list=tf.train.BytesList(value=[imgByteArr])),
                     "label": tf.train.Feature(int64_list=tf.train.Int64List(value=[label]))}))
                 writer.write(example.SerializeToString())
             except:
