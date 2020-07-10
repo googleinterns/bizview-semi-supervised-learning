@@ -2,9 +2,6 @@ import os  # used for directory operations
 import tensorflow as tf
 from PIL import Image  # used to read images from directory
 
-def _int64_feature(value):
-  return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
-
 def create_TFRecord(cwd, recordPath, sets):
     # the number of classes of images
     keys = [name for name in os.listdir(cwd) if os.path.isdir(os.path.join(cwd, name))]
@@ -23,17 +20,10 @@ def create_TFRecord(cwd, recordPath, sets):
         for img_name in os.listdir(class_path):
             img_path = os.path.join(class_path, img_name)
             try:
-                # img = Image.open(img_path, "r")
-                img = open(img_path, 'rb').read()
-
-                # width, height = img.size
-
-                # img_raw = img.tobytes()
+                img = Image.open(img_path, "r")
+                img_raw = img.tobytes()
                 example = tf.train.Example(features=tf.train.Features(feature={
-                    # 'height': _int64_feature(width),
-                    # 'width': _int64_feature(height),
-                    # 'depth': _int64_feature(depth),
-                    "image": tf.train.Feature(bytes_list=tf.train.BytesList(value=[img])),
+                    "image": tf.train.Feature(bytes_list=tf.train.BytesList(value=[img_raw])),
                     "label": tf.train.Feature(int64_list=tf.train.Int64List(value=[label]))}))
                 writer.write(example.SerializeToString())
             except:
