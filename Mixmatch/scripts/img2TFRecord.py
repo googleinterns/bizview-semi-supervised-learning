@@ -29,7 +29,7 @@ def create_TFRecord(cwd, recordPath, sets):
                 # Exclude all non RGB images
                 if len(img.getbands()) != 3:
                     continue
-                img = img.resize((1024, 1024))
+                img = img.resize((64, 64))
                 # img = open(img_path, 'rb').read()
 
                 # width, height = img.size

@@ -200,6 +200,6 @@ DATASETS.update([DataSet.creator('svhn', seed, label, valid, augment_svhn, do_me
 DATASETS.update([DataSet.creator('svhn_noextra', seed, label, valid, augment_svhn, do_memoize=False)
                  for seed, label, valid in
                  itertools.product(range(6), [250, 500, 1000, 2000, 4000, 8000], [1, 5000])])
-DATASETS.update([DataSet.creator('OIDv6', seed, label, valid, augment_OIDv6, height=1024, width=1024, nclass=4)
+DATASETS.update([DataSet.creator('OIDv6', seed, label, valid, augment_OIDv6, height=64, width=64, nclass=4)
                  for seed, label, valid in
                  itertools.product(range(6), [1000], [1])])
