@@ -2,3 +2,6 @@ Mixmatch/ML_DATA/*
 Mixmatch/OIDv6/*
 Mixmatch/experiments/*
 Mixmatch/.ipynb_checkpoints/*
+Mixmatch/libml/.ipynb_checkpoints/*
+Mixmatch/libml/__pycache__/*
+Mixmatch/scripts/.ipynb_checkpoints/*
