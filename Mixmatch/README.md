@@ -1,5 +1,7 @@
 # MixMatch - A Holistic Approach to Semi-Supervised Learning
 
+## NOTE: The instructions below is originated from MixMatch opensource repo. [Link](https://github.com/google-research/mixmatch)
+
 Code for the paper: "[MixMatch - A Holistic Approach to Semi-Supervised Learning](https://arxiv.org/abs/1905.02249)" by David Berthelot, Nicholas Carlini, Ian Goodfellow, Nicolas Papernot, Avital Oliver and Colin Raffel.
 
 This is not an officially supported Google product.
