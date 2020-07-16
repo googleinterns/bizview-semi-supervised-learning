@@ -1,4 +1,0 @@
-export ML_DATA="./ML_DATA"
-export PYTHONPATH=$PYTHONPATH:.
-
-echo $ML_DATA

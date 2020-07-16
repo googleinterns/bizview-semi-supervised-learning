@@ -24,6 +24,7 @@ from easydict import EasyDict
 from tqdm import trange
 
 from libml import data, utils
+from sklearn.metrics import precision_recall_fscore_support
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string('train_dir', './experiments',
@@ -244,6 +245,14 @@ class ClassifySemi(Model):
             accuracies.append((predicted.argmax(1) == labels).mean() * 100)
         self.train_print('kimg %-5d  accuracy train/valid/test  %.2f  %.2f  %.2f' %
                          tuple([self.tmp.step >> 10] + accuracies))
+        
+        with open("../predictions.txt", "w") as text_file:
+            text_file.write(str(predicted) + "\n")
+#         self.train_print(str(labels))
+#         self.train_print('------------ predicted: ' + predicted)
+#         precision, recall, fscore, support = precision_recall_fscore_support(labels, predicted.argmax(1), average=None)
+#         self.train_print('precision: ' + str(precision))
+#         self.train_print('recall: ' + str(recall))
         return np.array(accuracies, 'f')
 
     def add_summaries(self, feed_extra=None, **kwargs):
