@@ -247,8 +247,7 @@ class ClassifySemi(Model):
                          tuple([self.tmp.step >> 10] + accuracies))
         
         # Saving predictions and labels to csv for further inspection
-        np.savetxt("prediction.csv", predicted, delimiter=",")
-        np.savetxt("labels.csv", labels, delimiter=",")
+        np.savetxt("results.csv", np.concatenate((labels[:, np.newaxis], predicted), axis=1), delimiter=",")
 
         # Precision Recall, Fscore in all categories
 #         precision, recall, fscore, support = precision_recall_fscore_support(labels, predicted.argmax(1), average=None)
