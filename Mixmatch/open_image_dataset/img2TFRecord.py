@@ -6,14 +6,14 @@ from PIL import Image  # used to read images from directory
 def _int64_feature(value):
   return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
 
-def create_TFRecord(cwd, recordPath, sets):
+def create_TFRecord(cwd, recordPath, recordFilePrefix, sets):
     # the number of classes of images
     keys = [name for name in os.listdir(cwd) if os.path.isdir(os.path.join(cwd, name))]
     values = range(len(keys))
     classes = dict(zip(keys, values))
 
     # name format of the tfrecord files
-    recordFileName = "OIDv6-" + sets + ".tfrecord"
+    recordFileName = recordFilePrefix + sets + ".tfrecord"
     # tfrecord file writer
     writer = tf.io.TFRecordWriter(recordPath + recordFileName)
 
@@ -50,11 +50,12 @@ def create_TFRecord(cwd, recordPath, sets):
     writer.close()
 
 # dataset file path
-cwd = "../OIDv6"
+cwd = "./OIDv6/"
 # tfrecord file path
 recordPath = "../ML_DATA/"
+recordFilePrefix = "OIDv6-"
 
 sets = ['train', 'test']
 for s in sets:
-    create_TFRecord(os.path.join(cwd,s), recordPath, s)
+    create_TFRecord(os.path.join(cwd,s), recordPath, recordFilePrefix, s)
 
