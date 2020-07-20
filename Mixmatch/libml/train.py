@@ -246,13 +246,14 @@ class ClassifySemi(Model):
         self.train_print('kimg %-5d  accuracy train/valid/test  %.2f  %.2f  %.2f' %
                          tuple([self.tmp.step >> 10] + accuracies))
         
-        with open("../predictions.txt", "w") as text_file:
-            text_file.write(str(predicted) + "\n")
-#         self.train_print(str(labels))
-#         self.train_print('------------ predicted: ' + predicted)
+        # Saving predictions and labels to csv for further inspection
+        np.savetxt("results.csv", np.concatenate((labels[:, np.newaxis], predicted), axis=1), delimiter=",")
+
+        # Precision Recall, Fscore in all categories
 #         precision, recall, fscore, support = precision_recall_fscore_support(labels, predicted.argmax(1), average=None)
 #         self.train_print('precision: ' + str(precision))
 #         self.train_print('recall: ' + str(recall))
+
         return np.array(accuracies, 'f')
 
     def add_summaries(self, feed_extra=None, **kwargs):
