@@ -7,8 +7,8 @@
 3. Download some categories from the dataset to current directory. (This may take a while)
 	Take Motorcycle, Parking Meter, Stop Sign, Fire Hydrant these 4 categories as an example:
 	```oidv6 downloader --dataset . --type_data all --classes "Motorcycle" "Parking meter" "Stop sign" "Fire hydrant" --yes```
-4. Run img2tfrecord.py to generate tfRecord files from the downloaded images.
-	```python3 img2tfrecord.py```
+4. Run img2tfrecord.py to generate tfRecord files from the downloaded images:
+	```python3 img2tfrecord.py```.
 	The generated tfrecord files will be saved to Mixmatch/ML_DATA
 5. Run script to generate 1000 labeled data and ~7000 unlabeled data to experiment on the semi-supervised learning model. The ratio between labeled data can be modified inside the shell script.
 	```.buildOIDv6_dataset.sh```
@@ -25,11 +25,12 @@
 
 The dataset is biased on class Motorcycle, which dominates ~85% of all the cases. And from all the training data, 1000 data points are labeled, and the rest is unlabeled.
 
-## Results:
+## Results
 
 The model achieved 91.18% accuracy on the test set, and 100% on the training set on epoch 6. And it quickly overfitted on the dataset.
 
 And these are the PR curves for each category:
+
 **0. Motorcycle:**
 ![Motorocycle PR Curve](./Results/00_Motorcycle.png?raw=true)
 
