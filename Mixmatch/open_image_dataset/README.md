@@ -25,7 +25,7 @@
 
 The dataset is biased on class Motorcycle, which dominates ~85% of all the cases. And from all the training data, 1000 data points are labeled, and the rest is unlabeled.
 
-## Results:
+## Results
 
 The model achieved 91.18% accuracy on the test set, and 100% on the training set on epoch 6. And it quickly overfitted on the dataset.
 
