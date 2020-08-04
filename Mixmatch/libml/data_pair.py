@@ -15,7 +15,7 @@
 import itertools
 
 from absl import flags
-from libml.data import DataSet, augment_cifar10, augment_svhn, augment_stl10, augment_OIDv6
+from libml.data import DataSet, augment_cifar10, augment_svhn, augment_stl10, augment_OIDv6, augment_streetview, augment_streetview_v2, augment_streetview_v2_512, augment_streetview_v3_64
 import tensorflow as tf
 
 flags.DEFINE_integer('nu', 2, 'Number of augmentations for class-consistency.')
@@ -57,3 +57,23 @@ DATASETS.update([DataSet.creator('OIDv6', seed, label, valid, [augment_OIDv6, st
                                  width=64)
                  for seed, label, valid in
                  itertools.product(range(6), [1000], [1])])
+
+DATASETS.update([DataSet.creator('streetview', seed, label, valid, [augment_streetview, stack_augment(augment_streetview)], height=64,
+                                 width=64, nclass=2)
+                 for seed, label, valid in
+                 itertools.product(range(6), [1000], [1])])
+
+DATASETS.update([DataSet.creator('streetview-v2', seed, label, valid, [augment_streetview_v2, stack_augment(augment_streetview_v2)], height=64,
+                                 width=64, nclass=2)
+                 for seed, label, valid in
+                 itertools.product(range(6), [1000], [1])])
+
+DATASETS.update([DataSet.creator('streetview_v2_512', seed, label, valid, [augment_streetview_v2_512, stack_augment(augment_streetview_v2_512)], height=512,
+                                 width=512, nclass=2)
+                 for seed, label, valid in
+                 itertools.product(range(6), [1000], [1])])
+
+DATASETS.update([DataSet.creator('streetview_v3_64', seed, label, valid, [augment_streetview_v3_64, stack_augment(augment_streetview_v3_64)], height=64,
+                                 width=64, nclass=2)
+                 for seed, label, valid in
+                 itertools.product(range(6), [1000, 8000, 20000], [1, 4000, 5000])])

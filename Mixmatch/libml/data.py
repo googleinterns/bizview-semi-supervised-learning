@@ -183,6 +183,10 @@ augment_stl10 = lambda x: dict(image=augment_shift(augment_mirror(x['image']), 1
 augment_cifar10 = lambda x: dict(image=augment_shift(augment_mirror(x['image']), 4), label=x['label'])
 augment_svhn = lambda x: dict(image=augment_shift(x['image'], 4), label=x['label'])
 augment_OIDv6 = lambda x: dict(image=augment_shift(augment_mirror(x['image']), 4), label=x['label'])
+augment_streetview = lambda x: dict(image=augment_shift(augment_mirror(x['image']), 4), label=x['label'])
+augment_streetview_v2 = lambda x: dict(image=augment_shift(augment_mirror(x['image']), 4), label=x['label'])
+augment_streetview_v2_512 = lambda x: dict(image=augment_shift(augment_mirror(x['image']), 4), label=x['label'])
+augment_streetview_v3_64 = lambda x: dict(image=augment_shift(augment_mirror(x['image']), 4), label=x['label'])
 
 DATASETS = {}
 DATASETS.update([DataSet.creator('cifar10', seed, label, valid, augment_cifar10)
@@ -203,3 +207,15 @@ DATASETS.update([DataSet.creator('svhn_noextra', seed, label, valid, augment_svh
 DATASETS.update([DataSet.creator('OIDv6', seed, label, valid, augment_OIDv6, height=64, width=64, nclass=4)
                  for seed, label, valid in
                  itertools.product(range(6), [1000], [1])])
+DATASETS.update([DataSet.creator('streetview', seed, label, valid, augment_streetview, height=64, width=64, nclass=2)
+                 for seed, label, valid in
+                 itertools.product(range(6), [1000], [1])])
+DATASETS.update([DataSet.creator('streetview-v2', seed, label, valid, augment_streetview_v2, height=64, width=64, nclass=2)
+                 for seed, label, valid in
+                 itertools.product(range(6), [1000], [1])])
+DATASETS.update([DataSet.creator('streetview_v2_512', seed, label, valid, augment_streetview_v2_512, height=512, width=512, nclass=2)
+                 for seed, label, valid in
+                 itertools.product(range(6), [1000], [1])])
+DATASETS.update([DataSet.creator('streetview_v3_64', seed, label, valid, augment_streetview_v3_64, height=64, width=64, nclass=2)
+                 for seed, label, valid in
+                 itertools.product(range(6), [1000, 8000, 20000], [1, 4000, 5000])])
