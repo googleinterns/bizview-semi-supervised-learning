@@ -69,7 +69,7 @@ DATASETS.update([DataSet.creator('streetview-v2', seed, label, valid, [augment_s
                  itertools.product(range(6), [1000], [1])])
 
 DATASETS.update([DataSet.creator('streetview_v2_512', seed, label, valid, [augment_streetview_v2_512, stack_augment(augment_streetview_v2_512)], height=512,
-                                 width=512, nclass=2)
+                                 width=512, nclass=2, do_memoize=False)
                  for seed, label, valid in
                  itertools.product(range(6), [1000], [1])])
 

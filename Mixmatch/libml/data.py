@@ -213,7 +213,7 @@ DATASETS.update([DataSet.creator('streetview', seed, label, valid, augment_stree
 DATASETS.update([DataSet.creator('streetview-v2', seed, label, valid, augment_streetview_v2, height=64, width=64, nclass=2)
                  for seed, label, valid in
                  itertools.product(range(6), [1000], [1])])
-DATASETS.update([DataSet.creator('streetview_v2_512', seed, label, valid, augment_streetview_v2_512, height=512, width=512, nclass=2)
+DATASETS.update([DataSet.creator('streetview_v2_512', seed, label, valid, augment_streetview_v2_512, height=512, width=512, nclass=2, do_memoize=False)
                  for seed, label, valid in
                  itertools.product(range(6), [1000], [1])])
 DATASETS.update([DataSet.creator('streetview_v3_64', seed, label, valid, augment_streetview_v3_64, height=64, width=64, nclass=2)
