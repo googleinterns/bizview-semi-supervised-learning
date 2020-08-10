@@ -92,7 +92,7 @@ def write_tfrecord_from_images(image_folder_path, label, writer):
         example = img_to_example(img, label)
         writer.write(example.SerializeToString())
 
-
+# Striped out only the maximum confidence bbox of a image. Function is called in generate_tfexamples_from_detections().
 def strip_top_confidence_bbox(confidence, bbox):
     target = []
             
@@ -104,6 +104,8 @@ def strip_top_confidence_bbox(confidence, bbox):
     
     return target
 
+
+# Striped out ALL bbox where confidence is over threshold. Function is called in generate_tfexamples_from_detections().
 def strip_all_qualified_bbox(confidence, bbox):
     target = []
     if confidence.size > 0:
@@ -115,8 +117,8 @@ def strip_all_qualified_bbox(confidence, bbox):
 
 
 # Strip the bboxes from the parsed_image_dataset that are over threshold and write it into TFrecord file.
-def write_tfrecord_from_detection(parsed_image_dataset, folder_path, writer, include_top_camera, only_keep_top_confidence, balance_threshold):
-    cnt = [0, 0] # Count total amounts of pos and neg examples
+def generate_tfexamples_from_detections(parsed_image_dataset, folder_path, include_top_camera, only_keep_top_confidence):
+    examples = {0:[], 1:[]}
     
     for image_features in parsed_image_dataset:
         img_name, confidence, bbox = parse_labels(image_features)
@@ -147,29 +149,49 @@ def write_tfrecord_from_detection(parsed_image_dataset, folder_path, writer, inc
                 continue
 
             for t in target:
-                if balance_threshold and cnt[t['label']] > balance_threshold:
-                    continue
-                cnt[t['label']] += 1
-                
+                crop_img = img
                 if 'bbox' in t:
-                    img = img.crop(t['bbox'])
-                img = img.resize(OUTPUT_IMAGE_SIZE)
-                example = img_to_example(img, t['label'])
-                writer.write(example.SerializeToString())
-
+                    crop_img = crop_img.crop(t['bbox'])
+                crop_img = crop_img.resize(OUTPUT_IMAGE_SIZE)
+                example = img_to_example(crop_img, t['label'])
+                examples[t['label']].append(example)
                 
+    return examples
+
+# Write positive and negative tfexamples to tfrecord using the writer. A balance boolean parameter can decide to balance the pos and neg examples count.
+def write_tfexample_to_tfrecord(positive_examples, negative_examples, balance, writer):
+    take = float('inf')
+    num_pos = len(positive_examples)
+    num_neg = len(negative_examples)
+    
+    if balance:    
+        take = min(num_pos, num_neg)
+    
+    for i in range(min(num_pos, take)):
+        writer.write(positive_examples[i].SerializeToString())
+    
+    for i in range(min(num_neg, take)):
+        writer.write(negative_examples[i].SerializeToString())
+
+
+# Write tfrecords in batches of input record files.
 def batch_read_write_tfrecords(file_range, input_record_path, input_img_path, writer, detection_property):
     include_top_camera = detection_property['include_top_camera']
     only_keep_top_confidence = detection_property['only_keep_top_confidence']
-    balance_threshold = detection_property['balance_threshold']
+    balance = detection_property['balance']
+    pos_examples, neg_examples = [], []
     
     for i in range(file_range[0], file_range[1]):
         file_name = "./streetlearn_detections_tfexample-" + str(i).zfill(5) + "-of-01000.tfrecord"
         parsed_image_dataset = read_tfrecord(os.path.join(input_record_path, file_name))
-        write_tfrecord_from_detection(parsed_image_dataset, input_img_path, writer, include_top_camera, only_keep_top_confidence, balance_threshold)
+        examples = generate_tfexamples_from_detections(parsed_image_dataset, input_img_path, include_top_camera, only_keep_top_confidence)
+        neg_examples.extend(examples[0])
+        pos_examples.extend(examples[1])
+    
+    write_tfexample_to_tfrecord(pos_examples, neg_examples, balance, writer)
 
 
-# filter the dataset with images lower than the threshold, and store the image names in a list. These images will be handpicked to be used as negative examples in the test set.
+# Filter the dataset with images lower than the threshold, and store the image names in a list. These images will be handpicked to be used as negative examples in the test set.
 def filter_image(parsed_image_dataset, folder_path, threshold):
     res = []
     
