@@ -4,6 +4,7 @@ import itertools
 import os  # used for directory operations
 import io
 from PIL import Image  # used to read images from directory
+import random
 
 tf.enable_eager_execution()
 
@@ -44,7 +45,7 @@ def read_tfrecord(file_path):
 
 
 # Parse and cleanup the labels to a more straigtforward format.
-def parse_labels(image_features):
+def parse_detection_confidences(image_features):
     # the format of image_features['image/source_id'] is 'cns/path/to/image_file_name.jpg'
     img_name = str(image_features[SOURCE_ID].numpy()).split('/')[-1][:-1]
     confidence = tf.sparse_tensor_to_dense(image_features[BBOX_CONFIDENCE], default_value=0).numpy()
@@ -116,13 +117,14 @@ def strip_all_qualified_bbox(confidence, bbox):
     return target
 
 
-# Strip the bboxes from the parsed_image_dataset that are over threshold and write it into TFrecord file.
+# Strip the bboxes from the parsed_image_dataset that are over threshold and added the tfexample to the return list.
 def generate_tfexamples_from_detections(parsed_image_dataset, folder_path, include_top_camera, only_keep_top_confidence):
+    # Store examples in a dictionary. 0 for negative examples and 1 for positive examples.
     examples = {0:[], 1:[]}
     
     for image_features in parsed_image_dataset:
-        img_name, confidence, bbox = parse_labels(image_features)
-        # The format fo the image_name is XXXXXX_Y.jpg, the Y represents the view of the image.
+        img_name, confidence, bbox = parse_detection_confidences(image_features)
+        # The format fo the image_name is XXXXXX_Y.jpg, the Y is the identifier of the view. 1, 2, 3 and 4 are the side views and 5 is the upward view. 0 is the view with markers overlaid.
         view = img_name.split('.')[0][-1]
         keep_image = include_top_camera or (view != '5' and view != '0')
         
@@ -166,12 +168,16 @@ def write_tfexample_to_tfrecord(positive_examples, negative_examples, balance, w
     
     if balance:    
         take = min(num_pos, num_neg)
+        positive_examples = positive_examples[:take]
+        negative_examples = negative_examples[:take]
     
-    for i in range(min(num_pos, take)):
-        writer.write(positive_examples[i].SerializeToString())
+    examples = positive_examples.extend(negative_examples)
     
-    for i in range(min(num_neg, take)):
-        writer.write(negative_examples[i].SerializeToString())
+    random.seed(1)
+    random.shuffle(examples)
+    
+    for i, example in enumerate(examples):
+        writer.write(example.SerializeToString())
 
 
 # Write tfrecords in batches of input record files.
@@ -196,7 +202,7 @@ def filter_image(parsed_image_dataset, folder_path, threshold):
     res = []
     
     for image_features in parsed_image_dataset:
-        img_name, confidence, bbox = parse_labels(image_features)
+        img_name, confidence, bbox = parse_detection_confidences(image_features)
 
         if img_name:
             target = []
