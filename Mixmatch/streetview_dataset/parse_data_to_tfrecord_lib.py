@@ -94,27 +94,43 @@ def write_tfrecord_from_images(image_folder_path, label, writer):
         writer.write(example.SerializeToString())
 
 # Striped out only the maximum confidence bbox of a image. Function is called in generate_tfexamples_from_detections().
-def strip_top_confidence_bbox(confidence, bbox):
+def strip_top_confidence_bbox(confidence, bbox, threshold):
     target = []
             
-    if confidence.size > 0 and max(confidence) > CONF_THRESHOLD['pos']:
+    if confidence.size > 0 and max(confidence) > threshold['pos']:
         pos = np.argmax(confidence)
         target.append({'label':1, 'bbox':bbox[:, pos]})
-    elif confidence.size == 0 or (confidence.size > 0 and max(confidence) < CONF_THRESHOLD['neg']):
+    elif confidence.size == 0 or (confidence.size > 0 and max(confidence) < threshold['neg']):
         target.append({'label':0})
     
     return target
 
 
 # Striped out ALL bbox where confidence is over threshold. Function is called in generate_tfexamples_from_detections().
-def strip_all_qualified_bbox(confidence, bbox):
+def strip_all_qualified_bbox(confidence, bbox, threshold):
     target = []
     if confidence.size > 0:
         for i in range(confidence.size):
-            if confidence[i] > CONF_THRESHOLD['pos'] or confidence[i] < CONF_THRESHOLD['neg']:
+            if confidence[i] > threshold['pos'] or confidence[i] < threshold['neg']:
                 target.append({'label':int(round(confidence[i])), 'bbox':bbox[:, i]})
     
     return target
+
+
+# Read image from path and check exclude non RGB image.
+def read_and_check_image(img_path):
+    try:
+        img = Image.open(img_path, "r")
+    except Exception as e:
+        print(e)
+        print(img_path + " is not valid")
+        return None
+
+    # Exclude all non RGB images
+    if len(img.getbands()) != 3:
+        return None
+    
+    return img
 
 
 # Strip the bboxes from the parsed_image_dataset that are over threshold and added the tfexample to the return list.
@@ -126,28 +142,20 @@ def generate_tfexamples_from_detections(parsed_image_dataset, folder_path, inclu
         img_name, confidence, bbox = parse_detection_confidences(image_features)
         # The format fo the image_name is XXXXXX_Y.jpg, the Y is the identifier of the view. 1, 2, 3 and 4 are the side views and 5 is the upward view. 0 is the view with markers overlaid.
         view = img_name.split('.')[0][-1]
-        keep_image = include_top_camera or (view != '5' and view != '0')
+        keep_image = view != '0' and (include_top_camera or view != '5')
         
         if img_name and keep_image:
             img_path = os.path.join(folder_path, img_name)
+            img = read_and_check_image(img_path)        
+            if not img:
+                continue
             
             if only_keep_top_confidence:
-                target = strip_top_confidence_bbox(confidence, bbox)
+                target = strip_top_confidence_bbox(confidence, bbox, CONF_THRESHOLD)
             else:
-                target = strip_all_qualified_bbox(confidence, bbox)
+                target = strip_all_qualified_bbox(confidence, bbox, CONF_THRESHOLD)
             
             if not target:
-                continue
-
-            try:
-                img = Image.open(img_path, "r")
-            except Exception as e:
-                print(e)
-                print(img_path + " is not valid")
-                continue
-
-            # Exclude all non RGB images
-            if len(img.getbands()) != 3:
                 continue
 
             for t in target:
@@ -197,17 +205,31 @@ def batch_read_write_tfrecords(file_range, input_record_path, input_img_path, wr
     write_tfexample_to_tfrecord(pos_examples, neg_examples, balance, writer)
 
 
-# Filter the dataset with images lower than the threshold, and store the image names in a list. These images will be handpicked to be used as negative examples in the test set.
-def filter_image(parsed_image_dataset, folder_path, threshold):
-    res = []
-    
+# Filter the dataset with images bbox lower than the threshold, and copy the image bbox to output directory. These images will be handpicked to be used as negative examples in the test set.
+def filter_image_with_confidence_threshold(parsed_image_dataset, input_folder_path, output_folder_path, neg_threshold):
     for image_features in parsed_image_dataset:
         img_name, confidence, bbox = parse_detection_confidences(image_features)
+        # The format fo the image_name is XXXXXX_Y.jpg, the Y is the identifier of the view. 1, 2, 3 and 4 are the side views and 5 is the upward view. 0 is the view with markers overlaid.
+        view = img_name.split('.')[0][-1]
+        keep_image = view != '0' and view != '5'
+        
+        if img_name and keep_image:
+            img_path = os.path.join(input_folder_path, img_name)
+            img = read_and_check_image(img_path)
+            if not img:
+                continue
+            
+            threshold = {'neg': neg_threshold, 'pos': 1.0}
+            target = strip_all_qualified_bbox(confidence, bbox, threshold)
+            
+            if not target:
+                continue
 
-        if img_name:
-            target = []
-            if confidence.size == 0 or (confidence.size > 0 and max(confidence) < threshold):
-                res.append(img_name)
-    return res
-
+            for i, t in enumerate(target):
+                crop_img = img
+                if 'bbox' in t:
+                    crop_img = crop_img.crop(t['bbox'])
+                crop_img = crop_img.resize(OUTPUT_IMAGE_SIZE)
+                new_file_name = img_name.split('.')[0] + '_' + str(i) + '.' + img_name.split('.')[1]
+                crop_img.save(os.path.join(output_folder_path + new_file_name))
 
