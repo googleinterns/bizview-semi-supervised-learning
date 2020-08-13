@@ -144,27 +144,29 @@ def generate_tfexamples_from_detections(parsed_image_dataset, folder_path, inclu
         view = img_name.split('.')[0][-1]
         keep_image = view != '0' and (include_top_camera or view != '5')
         
-        if img_name and keep_image:
-            img_path = os.path.join(folder_path, img_name)
-            img = read_and_check_image(img_path)        
-            if not img:
-                continue
+        if not img_name or not keep_image:
+            continue
             
-            if only_keep_top_confidence:
-                target = strip_top_confidence_bbox(confidence, bbox, CONF_THRESHOLD)
-            else:
-                target = strip_all_qualified_bbox(confidence, bbox, CONF_THRESHOLD)
+        img_path = os.path.join(folder_path, img_name)
+        img = read_and_check_image(img_path)        
+        if not img:
+            continue
+        
+        if only_keep_top_confidence:
+            target = strip_top_confidence_bbox(confidence, bbox, CONF_THRESHOLD)
+        else:
+            target = strip_all_qualified_bbox(confidence, bbox, CONF_THRESHOLD)
             
-            if not target:
-                continue
+        if not target:
+            continue
 
-            for t in target:
-                crop_img = img
-                if 'bbox' in t:
-                    crop_img = crop_img.crop(t['bbox'])
-                crop_img = crop_img.resize(OUTPUT_IMAGE_SIZE)
-                example = img_to_example(crop_img, t['label'])
-                examples[t['label']].append(example)
+        for t in target:
+            crop_img = img
+            if 'bbox' in t:
+                crop_img = crop_img.crop(t['bbox'])
+            crop_img = crop_img.resize(OUTPUT_IMAGE_SIZE)
+            example = img_to_example(crop_img, t['label'])
+            examples[t['label']].append(example)
                 
     return examples
 
@@ -213,23 +215,24 @@ def filter_image_with_confidence_threshold(parsed_image_dataset, input_folder_pa
         view = img_name.split('.')[0][-1]
         keep_image = view != '0' and view != '5'
         
-        if img_name and keep_image:
-            img_path = os.path.join(input_folder_path, img_name)
-            img = read_and_check_image(img_path)
-            if not img:
-                continue
+        if not img_name or not keep_image:
+            continue
             
-            threshold = {'neg': neg_threshold, 'pos': 1.0}
-            target = strip_all_qualified_bbox(confidence, bbox, threshold)
-            
-            if not target:
-                continue
+        img_path = os.path.join(input_folder_path, img_name)
+        img = read_and_check_image(img_path)
+        if not img:
+            continue
+        
+        threshold = {'neg': neg_threshold, 'pos': 1.0}
+        target = strip_all_qualified_bbox(confidence, bbox, threshold)
+        if not target:
+            continue
 
-            for i, t in enumerate(target):
-                crop_img = img
-                if 'bbox' in t:
-                    crop_img = crop_img.crop(t['bbox'])
-                crop_img = crop_img.resize(OUTPUT_IMAGE_SIZE)
-                new_file_name = img_name.split('.')[0] + '_' + str(i) + '.' + img_name.split('.')[1]
-                crop_img.save(os.path.join(output_folder_path + new_file_name))
+        for i, t in enumerate(target):
+            crop_img = img
+            if 'bbox' in t:
+                crop_img = crop_img.crop(t['bbox'])
+            crop_img = crop_img.resize(OUTPUT_IMAGE_SIZE)
+            new_file_name = img_name.split('.')[0] + '_' + str(i) + '.' + img_name.split('.')[1]
+            crop_img.save(os.path.join(output_folder_path + new_file_name))
 
