@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tensorflow.keras.applications.resnet50 import ResNet50
+from tensorflow.keras.applications.resnet50 import ResNet50, preprocess_input
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Input, Dropout
@@ -10,6 +10,7 @@ import numpy as np
 tf.enable_eager_execution()
 
 # Read in tfrecord files and construct dataset from it
+# Input(filepath: string), Output(tuple of two numpy arrays)
 def create_dataset(filepath):
     raw_image_dataset = tf.data.TFRecordDataset(filepath)
 
@@ -46,19 +47,25 @@ class test_callback(Callback):
 
 
 # Create transfer learning model from pretrained Resnet50 model.
+# Inputs(image_size: int, num_classes: int, lr: float). Outputs(model: keras Model class)
 def create_model(image_size, num_classes, lr):
+    # Add input layer and data preprocessing to model
     input_tensor = Input(shape=(image_size, image_size, 3))
-    # Create the base pre-trained model
+    x = tf.cast(input_tensor, tf.float32)
+    x = preprocess_input(x)
+    
+    # Add pretrained ResNet50 to model
     base_model = ResNet50(weights='imagenet', include_top=False)
+    x = base_model(x)
+    
 
     # Add fully connected layers on top of the model
-    x = base_model.output
     x = GlobalAveragePooling2D()(x)
     x = Dense(256, activation='relu')(x)
     x = Dropout(0.2)(x)
     predictions = Dense(num_classes, activation='softmax')(x)
 
-    model = Model(inputs=base_model.input, outputs=predictions)
+    model = Model(inputs=input_tensor, outputs=predictions)
 
     # First: train only the top layers (which were randomly initialized) Thus, freeze all convolutional ResNet50 layers
     for layer in base_model.layers:
@@ -70,6 +77,7 @@ def create_model(image_size, num_classes, lr):
 
 
 # Modify the training layers for the tuning phase
+# Inputs(model: keras Model class, trainable_layer: int, lr: float), Outputs(model: keras Model class)
 def tune_model(model, trainable_layer, lr):
     # Train the top 1 convolution block. Therefore, freezing the first trainable_layer layers and unfreeze the rest:
     for layer in model.layers[:trainable_layer]:
@@ -83,6 +91,7 @@ def tune_model(model, trainable_layer, lr):
 
 
 # Visualize layer names and layer indices to see how many layers
+# Input(model: keras Model class)
 def visualize_model(model):
     for i, layer in enumerate(model.layers):
         print(i, layer.name)
