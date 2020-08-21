@@ -175,14 +175,15 @@ def write_tfexample_to_tfrecord(positive_examples, negative_examples, balance, w
     take = float('inf')
     num_pos = len(positive_examples)
     num_neg = len(negative_examples)
-    
+
     if balance:    
         take = min(num_pos, num_neg)
         positive_examples = positive_examples[:take]
         negative_examples = negative_examples[:take]
     
-    examples = positive_examples.extend(negative_examples)
-    
+    positive_examples.extend(negative_examples)
+    examples = positive_examples
+
     random.seed(1)
     random.shuffle(examples)
     
