@@ -87,3 +87,4 @@ DATASETS.update([DataSet.creator('streetview_v4_64', seed, label, valid, [augmen
                                  width=64, nclass=2, colors=4)
                  for seed, label, valid in
                  itertools.product(range(2), [100, 250, 1000], [1, 200, 4000, 5000])])
+
