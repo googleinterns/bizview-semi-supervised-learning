@@ -77,4 +77,4 @@ def get_embeddings_from_image(img):
         embeddings = np.array([0.0])
     
     return texts, embeddings
-    
+
