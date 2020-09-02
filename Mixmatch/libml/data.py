@@ -35,7 +35,10 @@ flags.DEFINE_string('p_unlabeled', '', 'Probability distribution of unlabeled.')
 flags.DEFINE_bool('whiten', False, 'Whether to normalize images.')
 FLAGS = flags.FLAGS
 
-# Original record_parse()
+IMAGE_SIZE = 64
+EMBEDDING_SIZE = 300
+
+# Original record_parse(), kept for reference
 # def record_parse(serialized_example):
 #     features = tf.parse_single_example(
 #         serialized_example,
@@ -46,38 +49,33 @@ FLAGS = flags.FLAGS
 #     label = features['label']
 #     return dict(image=image, label=label)
 
+# Reshpae the embeddings to fit the size of a image channel.
 def reshape_embeddings(embeddings):
-#     filter_embeddings = np.copy(embeddings[: min(MAX_EMBEDDINGS, len(embeddings))])
-#     filter_embeddings.resize((64, 64, 1))
-    if tf.shape(embeddings) > 3900:
-        embeddings = tf.slice(embeddings, [0], [3900])
-    zero_padding = tf.zeros([64 * 64] - tf.shape(embeddings), dtype=tf.float32)
+    # EMBEDDING_MAX is the longest embedding size that can fit a channel, for image_size:64 and embeddings_size:300:
+    # the embedding_max is 64*64 // 300 * 300 = 13 * 300 = 3900
+    EMBEDDING_MAX = IMAGE_SIZE**2 // EMBEDDING_SIZE * EMBEDDING_SIZE
+    if tf.shape(embeddings) > EMBEDDING_MAX:
+        embeddings = tf.slice(embeddings, [0], [EMBEDDING_MAX])
+    zero_padding = tf.zeros([IMAGE_SIZE**2] - tf.shape(embeddings), dtype=tf.float32)
     embeddings_padded = tf.concat([embeddings, zero_padding], 0)
-    result = tf.reshape(embeddings_padded, [64, 64, 1])
+    result = tf.reshape(embeddings_padded, [IMAGE_SIZE, IMAGE_SIZE, 1])
     
     return result
 
-# New record_parse for word embedding datasets
+# New record_parse for word embedding datasets.
 def record_parse(serialized_example):
     features = tf.parse_single_example(
         serialized_example,
         features={'image': tf.FixedLenFeature([], tf.string),
                   'label': tf.FixedLenFeature([], tf.int64),
-                    'texts': tf.io.FixedLenFeature([], tf.string),
-                    'embeddings': tf.io.VarLenFeature(dtype=tf.float32)})
+                  'texts': tf.io.FixedLenFeature([], tf.string),
+                  'embeddings': tf.io.VarLenFeature(dtype=tf.float32)})
     
     image = tf.image.decode_image(features['image'])
-    
     image = tf.cast(image, tf.float32) * (2.0 / 255) - 1.0
-
-
-#     embeddings = reshape_embeddings(features['embeddings'].values.numpy())
     embeddings = reshape_embeddings(features['embeddings'].values)
-    print(tf.shape(image))
-    print(tf.shape(embeddings))
     in_data = tf.concat([image, embeddings], axis=2)
-    print(tf.shape(in_data))
-    print('--------------------------------------------------------------------------')
+
     label = features['label']
     return dict(image=in_data, label=label)
 
@@ -102,7 +100,6 @@ def memoize(dataset: tf.data.Dataset) -> tf.data.Dataset:
         it = dataset.make_one_shot_iterator().get_next()
         try:
             while 1:
-                print(len(data))
                 data.append(session.run(it))
         except tf.errors.OutOfRangeError:
             pass
@@ -140,8 +137,6 @@ def augment_shift_for_embedded_data(x, w):
     image = tf.stack([channels[0], channels[1], channels[2]], axis=2)
     y = tf.pad(image, [[w] * 2, [w] * 2, [0] * 2], mode='REFLECT')
     y = tf.random_crop(y, tf.shape(image))
-    print(tf.shape(y))
-    print(tf.shape(channels[3]))
     return tf.concat([y, tf.expand_dims(channels[3], 2)], axis=2)
 
 
@@ -240,7 +235,6 @@ augment_streetview_v2_512 = lambda x: dict(image=augment_shift(augment_mirror(x[
 augment_streetview_v3_64 = lambda x: dict(image=augment_shift(augment_mirror(x['image']), 4), label=x['label'])
 augment_streetview_v3_256 = lambda x: dict(image=augment_shift(augment_mirror(x['image']), 4), label=x['label'])
 augment_streetview_v4_64 = lambda x: dict(image=augment_shift_for_embedded_data(augment_mirror_for_embedded_data(x['image']), 4), label=x['label'])
-# augment_streetview_v4_64 = lambda x: dict(image=augment_shift(augment_mirror(x['image']), 4), label=x['label'])
 
 DATASETS = {}
 DATASETS.update([DataSet.creator('cifar10', seed, label, valid, augment_cifar10)
@@ -278,4 +272,4 @@ DATASETS.update([DataSet.creator('streetview_v3_256', seed, label, valid, augmen
                  itertools.product(range(2), [1000], [1, 200, 4000, 5000])])
 DATASETS.update([DataSet.creator('streetview_v4_64', seed, label, valid, augment_streetview_v4_64, height=64, width=64, colors=4, nclass=2)
                  for seed, label, valid in
-                 itertools.product(range(2), [100, 250, 1000], [1, 200, 4000, 5000])])
+                 itertools.product(range(6), [100, 250, 1000, 8000, 39000], [1, 200, 4000, 5000])])
