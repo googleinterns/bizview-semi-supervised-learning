@@ -51,6 +51,7 @@ def create_dataset(filepath, word_embeddings=False):
     if word_embeddings:
         for image_features in parsed_image_dataset:
             img = tf.image.decode_image(image_features['image'])
+            # Casting the raw image data from the range of 0 ~ 255 to a normalized range of -1.0 ~ 1.0.
             img = tf.cast(img, tf.float32) * (2.0 / 255) - 1.0
             embeddings = reshape_embeddings(image_features['embeddings'].values)
             in_data = tf.concat([img, embeddings], axis=2).numpy()
