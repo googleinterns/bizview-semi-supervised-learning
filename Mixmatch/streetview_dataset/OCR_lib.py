@@ -4,8 +4,8 @@ import io
 import numpy as np
 from PIL import Image
 
-MAX_EMBEDDINGS = 13
-OUTPUT_SHAPE = 64
+IMAGE_SIZE = 64
+EMBEDDING_SIZE = 300
 
 # Read image files as byte array.
 # Input(path: String), Output(byte array)
@@ -57,13 +57,20 @@ def word_to_vec(text):
 
     return np.array(res)
 
-# Reshape 1D array to a square matrix
-# Input(embeddings: )
+
+# Reshpae the embeddings to fit the size of a image channel.
+# Input(embeddings: tf.tensor), Output(result: tf.tensor)
 def reshape_embeddings(embeddings):
-    filter_embeddings = np.copy(embeddings[: min(MAX_EMBEDDINGS, len(embeddings))])
-    filter_embeddings.resize((OUTPUT_SHAPE, OUTPUT_SHAPE, 1))
+    # EMBEDDING_MAX is the longest embedding size that can fit a channel, for image_size:64 and embeddings_size:300:
+    # the embedding_max is 64*64 // 300 * 300 = 13 * 300 = 3900
+    EMBEDDING_MAX = IMAGE_SIZE**2 // EMBEDDING_SIZE * EMBEDDING_SIZE
+    if tf.shape(embeddings) > EMBEDDING_MAX:
+        embeddings = tf.slice(embeddings, [0], [EMBEDDING_MAX])
+    zero_padding = tf.zeros([IMAGE_SIZE**2] - tf.shape(embeddings), dtype=tf.float32)
+    embeddings_padded = tf.concat([embeddings, zero_padding], 0)
+    result = tf.reshape(embeddings_padded, [IMAGE_SIZE, IMAGE_SIZE, 1])
     
-    return filter_embeddings
+    return result
 
 # A pipeline function to do OCR on image, and convert the texts to word embeddings.
 # Input(img: PIL image file), Output(texts: String, embeddings: numpy array)

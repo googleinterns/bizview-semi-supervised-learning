@@ -81,10 +81,13 @@ NOTE: Due to machine limitation, on 256x256 dataset the batch size is shrieked f
 
 
 ### Streetview_v4:
-There are two ways to add the word embedding to the model, one way is to concatenate the vectors after the image pixels, the other way is to feed them into the model at the top fully connected layers.
-![Model Layer Depth to Accuracy](./IMG/streetview_v4_embedding.png?raw=true)
+There are two ways to add the word embedding to the model:
+- Method A: Concatenate the vectors after the image pixels, and feed everything into the model.
+- Method B: Feed the word vectors into the model at the top fully connected layers.
 
-| Label Size | Learning Rate | Batch Size | Accuracy w/o word embeddings | Accuracy w/ word embeddings A method | Accuracy w/ word embeddings B method |
+![Embedding Processing Methods](./IMG/streetview_v4_embedding.png?raw=true)
+
+| Label Size | Learning Rate | Batch Size | Accuracy w/o word embeddings | Accuracy w/ word embeddings: Method A | Accuracy w/ word embeddings: Method B |
 |:----------:|:-------------:|:----------:|:----------------------------:|:------------------------------------:|:------------------------------------:|
 |     250    |     0.0001    |     64     |             76.79            |                 74.8                 |                 77.85                |
 |    1000    |     0.0001    |     64     |             71.62            |                 80.24                |                 80.11                |

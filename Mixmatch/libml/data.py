@@ -24,6 +24,7 @@ from absl import flags
 from tqdm import tqdm
 
 from libml import utils
+from streetview_dataset.OCR_lib import reshape_embeddings
 
 _DATA_CACHE = None
 DATA_DIR = os.environ['ML_DATA']
@@ -49,18 +50,6 @@ EMBEDDING_SIZE = 300
 #     label = features['label']
 #     return dict(image=image, label=label)
 
-# Reshpae the embeddings to fit the size of a image channel.
-def reshape_embeddings(embeddings):
-    # EMBEDDING_MAX is the longest embedding size that can fit a channel, for image_size:64 and embeddings_size:300:
-    # the embedding_max is 64*64 // 300 * 300 = 13 * 300 = 3900
-    EMBEDDING_MAX = IMAGE_SIZE**2 // EMBEDDING_SIZE * EMBEDDING_SIZE
-    if tf.shape(embeddings) > EMBEDDING_MAX:
-        embeddings = tf.slice(embeddings, [0], [EMBEDDING_MAX])
-    zero_padding = tf.zeros([IMAGE_SIZE**2] - tf.shape(embeddings), dtype=tf.float32)
-    embeddings_padded = tf.concat([embeddings, zero_padding], 0)
-    result = tf.reshape(embeddings_padded, [IMAGE_SIZE, IMAGE_SIZE, 1])
-    
-    return result
 
 # New record_parse for word embedding datasets.
 def record_parse(serialized_example):

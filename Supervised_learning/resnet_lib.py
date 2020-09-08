@@ -1,4 +1,5 @@
 from resnet50_mod import ResNet50_mod
+from streetview_dataset.OCR_lib import reshape_embeddings
 import tensorflow as tf
 from tensorflow.keras.applications.resnet50 import ResNet50, preprocess_input
 from tensorflow.keras.preprocessing import image
@@ -10,8 +11,7 @@ import numpy as np
 
 tf.enable_eager_execution()
 
-IMAGE_SIZE = 64
-EMBEDDING_SIZE = 300
+
 
 # Choose the correct parsing features based on if there is word embeddings in the dataset.
 # Input(word_embeddings: bool), Output(dictionary)
@@ -32,19 +32,6 @@ def image_feature(word_embeddings):
         
     return image_feature_description
 
-# Reshpae the embeddings to fit the size of a image channel.
-def reshape_embeddings(embeddings):
-    # EMBEDDING_MAX is the longest embedding size that can fit a channel, for image_size:64 and embeddings_size:300:
-    # the embedding_max is 64*64 // 300 * 300 = 13 * 300 = 3900
-    EMBEDDING_MAX = IMAGE_SIZE**2 // EMBEDDING_SIZE * EMBEDDING_SIZE
-    if tf.shape(embeddings) > EMBEDDING_MAX:
-        embeddings = tf.slice(embeddings, [0], [EMBEDDING_MAX])
-    zero_padding = tf.zeros([IMAGE_SIZE**2] - tf.shape(embeddings), dtype=tf.float32)
-    embeddings_padded = tf.concat([embeddings, zero_padding], 0)
-    result = tf.reshape(embeddings_padded, [IMAGE_SIZE, IMAGE_SIZE, 1])
-    
-    return result
-
 
 # Read in tfrecord files and construct dataset from it
 # Input(filepath: string), Output(tuple of two numpy arrays)
@@ -60,6 +47,7 @@ def create_dataset(filepath, word_embeddings=False):
     
     image, label = [], []
     
+    # The word_embeddings boolean determine if there is word_embedding data within the tfrecord file. The data preprocessing for two situations are different.
     if word_embeddings:
         for image_features in parsed_image_dataset:
             img = tf.image.decode_image(image_features['image'])
