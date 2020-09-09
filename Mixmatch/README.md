@@ -3,7 +3,7 @@
 To run experiments, first complete the instructions below from the original author. Then run ```source setup.sh``` to setup python evironment and ML_DATA directory.
 The insturctions of individual datasets can be found in the README file under these folders:
 - open_image_dataset
-- More on this later
+- streetview_dataset
 
 ## NOTE: The instructions below is originated from MixMatch opensource repo. [Link](https://github.com/google-research/mixmatch)
 
