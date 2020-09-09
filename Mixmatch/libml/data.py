@@ -24,6 +24,7 @@ from absl import flags
 from tqdm import tqdm
 
 from libml import utils
+from streetview_dataset.OCR_lib import reshape_embeddings
 
 _DATA_CACHE = None
 DATA_DIR = os.environ['ML_DATA']
@@ -35,16 +36,37 @@ flags.DEFINE_string('p_unlabeled', '', 'Probability distribution of unlabeled.')
 flags.DEFINE_bool('whiten', False, 'Whether to normalize images.')
 FLAGS = flags.FLAGS
 
+IMAGE_SIZE = 64
+EMBEDDING_SIZE = 300
 
+# Original record_parse(), kept for reference
+# def record_parse(serialized_example):
+#     features = tf.parse_single_example(
+#         serialized_example,
+#         features={'image': tf.FixedLenFeature([], tf.string),
+#                   'label': tf.FixedLenFeature([], tf.int64)})
+#     image = tf.image.decode_image(features['image'])
+#     image = tf.cast(image, tf.float32) * (2.0 / 255) - 1.0
+#     label = features['label']
+#     return dict(image=image, label=label)
+
+
+# New record_parse for word embedding datasets.
 def record_parse(serialized_example):
     features = tf.parse_single_example(
         serialized_example,
         features={'image': tf.FixedLenFeature([], tf.string),
-                  'label': tf.FixedLenFeature([], tf.int64)})
+                  'label': tf.FixedLenFeature([], tf.int64),
+                  'texts': tf.io.FixedLenFeature([], tf.string),
+                  'embeddings': tf.io.VarLenFeature(dtype=tf.float32)})
+    
     image = tf.image.decode_image(features['image'])
     image = tf.cast(image, tf.float32) * (2.0 / 255) - 1.0
+    embeddings = reshape_embeddings(features['embeddings'].values)
+    in_data = tf.concat([image, embeddings], axis=2)
+
     label = features['label']
-    return dict(image=image, label=label)
+    return dict(image=in_data, label=label)
 
 
 def default_parse(dataset: tf.data.Dataset, parse_fn=record_parse) -> tf.data.Dataset:
@@ -61,6 +83,7 @@ def dataset(filenames: list) -> tf.data.Dataset:
 
 def memoize(dataset: tf.data.Dataset) -> tf.data.Dataset:
     data = []
+    
     with tf.Session(config=utils.get_config()) as session:
         dataset = dataset.prefetch(16)
         it = dataset.make_one_shot_iterator().get_next()
@@ -92,6 +115,18 @@ def augment_mirror(x):
 def augment_shift(x, w):
     y = tf.pad(x, [[w] * 2, [w] * 2, [0] * 2], mode='REFLECT')
     return tf.random_crop(y, tf.shape(x))
+
+def augment_mirror_for_embedded_data(x):
+    channels = tf.unstack(x, num=4, axis=2)
+    image = tf.stack([channels[0], channels[1], channels[2]], axis=2)
+    return tf.concat([tf.image.random_flip_left_right(image), tf.expand_dims(channels[3], 2)], axis=2)
+
+def augment_shift_for_embedded_data(x, w):
+    channels = tf.unstack(x, num=4, axis=2)
+    image = tf.stack([channels[0], channels[1], channels[2]], axis=2)
+    y = tf.pad(image, [[w] * 2, [w] * 2, [0] * 2], mode='REFLECT')
+    y = tf.random_crop(y, tf.shape(image))
+    return tf.concat([y, tf.expand_dims(channels[3], 2)], axis=2)
 
 
 def augment_noise(x, std):
@@ -187,6 +222,8 @@ augment_streetview = lambda x: dict(image=augment_shift(augment_mirror(x['image'
 augment_streetview_v2 = lambda x: dict(image=augment_shift(augment_mirror(x['image']), 4), label=x['label'])
 augment_streetview_v2_512 = lambda x: dict(image=augment_shift(augment_mirror(x['image']), 4), label=x['label'])
 augment_streetview_v3_64 = lambda x: dict(image=augment_shift(augment_mirror(x['image']), 4), label=x['label'])
+augment_streetview_v3_256 = lambda x: dict(image=augment_shift(augment_mirror(x['image']), 4), label=x['label'])
+augment_streetview_v4_64 = lambda x: dict(image=augment_shift_for_embedded_data(augment_mirror_for_embedded_data(x['image']), 4), label=x['label'])
 
 DATASETS = {}
 DATASETS.update([DataSet.creator('cifar10', seed, label, valid, augment_cifar10)
@@ -218,4 +255,10 @@ DATASETS.update([DataSet.creator('streetview_v2_512', seed, label, valid, augmen
                  itertools.product(range(6), [1000], [1])])
 DATASETS.update([DataSet.creator('streetview_v3_64', seed, label, valid, augment_streetview_v3_64, height=64, width=64, nclass=2)
                  for seed, label, valid in
-                 itertools.product(range(6), [1000, 8000, 20000], [1, 4000, 5000])])
+                 itertools.product(range(6), [250, 1000, 8000, 20000, 39000], [1, 200, 4000, 5000])])
+DATASETS.update([DataSet.creator('streetview_v3_256', seed, label, valid, augment_streetview_v3_256, height=256, width=256, nclass=2, do_memoize=False)
+                 for seed, label, valid in
+                 itertools.product(range(2), [1000], [1, 200, 4000, 5000])])
+DATASETS.update([DataSet.creator('streetview_v4_64', seed, label, valid, augment_streetview_v4_64, height=64, width=64, colors=4, nclass=2)
+                 for seed, label, valid in
+                 itertools.product(range(6), [100, 250, 1000, 8000, 39000], [1, 200, 4000, 5000])])

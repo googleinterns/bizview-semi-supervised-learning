@@ -100,6 +100,14 @@ class ResNet(ClassifySemi):
             return x0 + x
 
         with tf.variable_scope('classify', reuse=tf.AUTO_REUSE, custom_getter=getter):
+            embedding_flag = False
+            # If there is a word_embedding channel in the image, separate it from the original data. 
+            if x.shape[-1] == 4:
+                embedding_flag = True
+                channels = tf.unstack(x, num=4, axis=3)
+                x = tf.stack([channels[0], channels[1], channels[2]], axis=3)
+                embeddings = tf.reshape(channels[3], [tf.shape(x)[0], 64**2])
+            
             y = tf.layers.conv2d((x - self.dataset.mean) / self.dataset.std, 16, 3, **conv_args(3, 16))
             for scale in range(scales):
                 y = residual(y, filters << scale, stride=2 if scale else 1, activate_before_residual=scale == 0)
@@ -108,6 +116,9 @@ class ResNet(ClassifySemi):
 
             y = leaky_relu(tf.layers.batch_normalization(y, **bn_args))
             y = tf.reduce_mean(y, [1, 2])
+            
+            if embedding_flag:
+                y = tf.concat([y, embeddings], axis=-1)
             logits = tf.layers.dense(y, self.nclass, kernel_initializer=tf.glorot_normal_initializer())
         return logits
 
