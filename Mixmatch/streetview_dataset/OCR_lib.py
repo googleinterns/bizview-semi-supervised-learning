@@ -3,6 +3,9 @@ import spacy
 import io
 import numpy as np
 from PIL import Image
+import tensorflow as tf
+
+tf.enable_eager_execution()
 
 IMAGE_SIZE = 64
 EMBEDDING_SIZE = 300
@@ -58,7 +61,7 @@ def word_to_vec(text):
     return np.array(res)
 
 
-# Reshpae the embeddings to fit the size of a image channel.
+# Reshape the embeddings to fit the size of a image channel.
 # Input(embeddings: tf.tensor), Output(result: tf.tensor)
 def reshape_embeddings(embeddings):
     # EMBEDDING_MAX is the longest embedding size that can fit a channel, for image_size:64 and embeddings_size:300:
