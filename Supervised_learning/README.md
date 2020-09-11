@@ -4,7 +4,7 @@ The supervised learning model (Resnet50) is used for a baseline comparison with 
 The model utilized transfer learning that is pretrained on 'Imagenet', and further tuned on the streetview dataset.
 
 ## Results:
-Here are the reusults trained on streetview dataset, for more info on the dataset, reference to the README under Mixmatch/streetview_dataset.
+Here are the results trained on streetview dataset. For more info on the dataset, reference to the README under Mixmatch/streetview_dataset.
 
 | Dataset           | Labels | Image Size | Learning Rate | Batch Size | Dropout | Pretrained | Accuracy |
 |-------------------|--------|------------|---------------|------------|---------|------------|----------|
